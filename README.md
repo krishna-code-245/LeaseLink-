@@ -1,49 +1,76 @@
-#lease-link-ai
-# Step 1: Install required libraries
-# pip install kagglehub scikit-learn pandas matplotlib
+# Install dependencies before running:
+# pip install flask kagglehub scikit-learn pandas matplotlib
 
 import kagglehub
 from kagglehub import KaggleDatasetAdapter
 import pandas as pd
-from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
-import matplotlib.pyplot as plt
+from flask import Flask, render_template_string, request
+import numpy as np
 
-# Step 2: Load dataset from Kaggle
+# -------------------------------
+# Step 1: Load and Train AI Model
+# -------------------------------
 df = kagglehub.load_dataset(
   KaggleDatasetAdapter.PANDAS,
   "kunwarakash/chennai-housing-sales-price"
 )
 
-print("First 5 records:", df.head())
+# Features and target
+X = df[['Area', 'BHK']]
+y = df['Sale Price']
 
-# Step 3: Select features (inputs) and target (output)
-# Example: predicting 'Sale Price' based on area, bedrooms, and location
-X = df[['Area', 'BHK', 'Location']]  # features
-y = df['Sale Price']                 # target
-
-# Convert categorical data (like Location) into numbers
-X = pd.get_dummies(X, drop_first=True)
-
-# Step 4: Split data into training and testing sets
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42
-)
-
-# Step 5: Train a machine learning model
+# Train model
 model = LinearRegression()
-model.fit(X_train, y_train)
+model.fit(X, y)
 
-# Step 6: Make predictions
-predictions = model.predict(X_test)
+# -------------------------------
+# Step 2: Flask Web App
+# -------------------------------
+app = Flask(__name__)
 
-# Step 7: Show results
-print("Predicted Prices:", predictions[:10])
-print("Actual Prices:", list(y_test[:10]))
+# HTML template (embedded directly)
+html_template = """
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Rental AI Predictor</title>
+    <style>
+        body { font-family: Arial; margin: 40px; background-color: #f9f9f9; }
+        h2 { color: #333; }
+        form { margin-bottom: 20px; }
+        button { background-color: #4CAF50; color: white; padding: 8px 12px; border: none; cursor: pointer; }
+        button:hover { background-color: #45a049; }
+    </style>
+</head>
+<body>
+    <h2>Chennai Housing Price Prediction</h2>
+    <form action="/predict" method="post">
+        <label>Area (sqft):</label>
+        <input type="text" name="area" required><br><br>
+        <label>BHK:</label>
+        <input type="text" name="bhk" required><br><br>
+        <button type="submit">Predict</button>
+    </form>
+    <h3>{{ prediction_text }}</h3>
+</body>
+</html>
+"""
 
-# Step 8: Visualize predictions vs actual
-plt.scatter(y_test, predictions)
-plt.xlabel("Actual Sale Price")
-plt.ylabel("Predicted Sale Price")
-plt.title("Chennai Housing Price Prediction")
-plt.show()
+@app.route("/")
+def home():
+    return render_template_string(html_template)
+
+@app.route("/predict", methods=["POST"])
+def predict():
+    area = float(request.form["area"])
+    bhk = int(request.form["bhk"])
+    features = np.array([[area, bhk]])
+    prediction = model.predict(features)[0]
+    return render_template_string(html_template, prediction_text=f"Predicted Price: ₹{prediction:,.2f}")
+
+# -------------------------------
+# Step 3: Run App
+# -------------------------------
+if __name__ == "__main__":
+    app.run(debug=True)
