@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Rental AI Predictor</title>
+    <title>LeaseLink AI Predictor</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='ka') }}">
 </head>
 <body>
     <h2>Chennai Housing Price Prediction</h2>
