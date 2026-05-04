@@ -1,18 +1,123 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>LeaseLink AI Predictor</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='ka') }}">
+  <title>Chennai AI Price Predictor</title>
+
+  <!-- TensorFlow.js -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+
+  <style>
+    body {
+      font-family: Arial;
+      text-align: center;
+      padding: 40px;
+      background: linear-gradient(135deg,#0f0c29,#302b63,#24243e);
+      color: white;
+    }
+
+    h1 {
+      color: #4facfe;
+    }
+
+    .box {
+      background: rgba(255,255,255,0.1);
+      padding: 30px;
+      border-radius: 20px;
+      display: inline-block;
+      backdrop-filter: blur(10px);
+    }
+
+    input {
+      padding: 12px;
+      margin: 10px;
+      border-radius: 10px;
+      border: none;
+      width: 200px;
+    }
+
+    button {
+      padding: 12px;
+      background: #00f2fe;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #4facfe;
+    }
+
+    #result {
+      margin-top: 20px;
+      font-size: 18px;
+      color: #00f2fe;
+    }
+  </style>
 </head>
+
 <body>
-    <h2>Chennai Housing Price Prediction</h2>
-    <form action="/predict" method="post">
-        <label>Area (sqft):</label>
-        <input type="text" name="area" required><br><br>
-        <label>BHK:</label>
-        <input type="text" name="bhk" required><br><br>
-        <button type="submit">Predict</button>
-    </form>
-    <h3>{{ prediction_text }}</h3>
+
+<h1>🏠 Chennai AI House Price Predictor</h1>
+
+<div class="box">
+
+  <input type="number" id="area" placeholder="Area (sqft)" required><br>
+  <input type="number" id="bhk" placeholder="BHK" required><br>
+
+  <button onclick="predictPrice()">Predict Price</button>
+
+  <p id="result">Loading model...</p>
+
+</div>
+
+<script>
+let model;
+let normData;
+
+// Load model + normalization
+async function loadAll() {
+    try {
+        model = await tf.loadLayersModel('./model_js/model.json');
+
+        const res = await fetch('./norm.json');
+        normData = await res.json();
+
+        document.getElementById("result").innerText = "✅ Model Ready";
+    } catch (err) {
+        document.getElementById("result").innerText = "❌ Error loading model";
+        console.error(err);
+    }
+}
+
+loadAll();
+
+// Predict function
+async function predictPrice() {
+    if (!model || !normData) {
+        alert("Model not ready yet");
+        return;
+    }
+
+    let area = parseFloat(document.getElementById("area").value);
+    let bhk = parseFloat(document.getElementById("bhk").value);
+
+    if (!area || !bhk) {
+        alert("Enter valid inputs");
+        return;
+    }
+
+    // Normalize input
+    let normArea = (area - normData.mean[0]) / normData.std[0];
+    let normBhk = (bhk - normData.mean[1]) / normData.std[1];
+
+    const input = tf.tensor2d([[normArea, normBhk]]);
+    const prediction = model.predict(input);
+    const value = await prediction.data();
+
+    document.getElementById("result").innerText =
+        "💰 Predicted Price: ₹" + Math.round(value[0]).toLocaleString();
+}
+</script>
+
 </body>
 </html>
