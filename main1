@@ -45,21 +45,5 @@ def predict():
 
 if __name__ == "__main__":
     app.run(debug=True)
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Rental AI Predictor</title>
-</head>
-<body>
-    <h2>Chennai Housing Price Prediction</h2>
-    <form action="/predict" method="post">
-        <label>Area (sqft):</label>
-        <input type="text" name="area" required><br><br>
-        <label>BHK:</label>
-        <input type="text" name="bhk" required><br><br>
-        <button type="submit">Predict</button>
-    </form>
-    <h3>{{ prediction_text }}</h3>
-</body>
-</html>
+
 
